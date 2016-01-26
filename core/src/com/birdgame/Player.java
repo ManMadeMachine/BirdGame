@@ -15,6 +15,8 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.TimeUtils;
 
+import com.birdgame.util.Constants;
+
 /**
  *
  * @author ManMadeMachine
@@ -39,24 +41,15 @@ public class Player {
     private boolean jumping;
     
     //player jump "impulse" velocity
-    private float jumpVelocity = 1.0f;
-    
-    //TODO: Move to the Constants class
-    private float gravity = 0.1f;
-    
-    //DEBUG: how long does the jump last (milliseconds)?
-    private long jumpTime = 2000;
-    
-    //DEBUG: when did the last jump start?
-    private long jumpStartTime = 0;
+    private float jumpVelocity;
     
     public Player(){
         //initialize stuff..
         this.width = 64;
         this.height = 64;
         
-        //Set starting position
-        this.position = new Vector2(0.5f, 0.5f);
+        //Set starting position. Y coordinate will be the ground level
+        this.position = new Vector2(0.5f, Constants.GROUND_LEVEL);
         this.scale = 1.0f;
         
         //Create and initialize sprite
@@ -65,6 +58,9 @@ public class Player {
         this.sprite.setOrigin(this.position.x /2, this.position.x / 2);
         this.sprite.setScale(this.scale);
         this.sprite.setSize(0.5f, 0.5f);
+        
+        //Set player jump velocity
+        this.jumpVelocity = Constants.PLAYER_JMP_VELOCITY;
         
         //Player starts grounded
         this.jumping = false;
@@ -95,7 +91,7 @@ public class Player {
         float deltaX = (rotationAmount / 360.0f) * 2 * MathUtils.PI * (sprite.getWidth() / 2.0f);
         
         //Last x coordinate
-        float x = this.sprite.getX();
+        //float x = this.position.x;
         
         //Check input and move/rotate player left or right
         if (Gdx.input.isKeyPressed(Keys.RIGHT)){
@@ -103,45 +99,62 @@ public class Player {
             this.sprite.rotate(-rotationAmount);
             
             //Apply deltaX to x coordinate
-            x += deltaX;
+            this.position.x += deltaX;
         }
         if (Gdx.input.isKeyPressed(Keys.LEFT)){
             this.sprite.rotate(rotationAmount);
             
             //Apply -deltaX to x coordinate
-            x -= deltaX;
+            this.position.x -= deltaX;
         }
         //Jump
         if (Gdx.input.isKeyJustPressed(Keys.SPACE)){
+            //Jump only if the player isn't already jumping
             if (!this.jumping){
                 Gdx.app.debug(TAG, "Jump!");
-                this.jumpStartTime = TimeUtils.millis();
                 this.jumping = true;
-            }
-            else{
-                Gdx.app.debug(TAG, "Already jumping!");
             }
         }
         
         //Update the x coordinate
-        this.sprite.setX(x);
+        this.sprite.setX(this.position.x);
         
-        //DEBUG: update the jumping boolean, if the jumping has ended
-        if (TimeUtils.millis() - this.jumpStartTime > jumpTime){
-            this.jumping = false;
-            this.jumpStartTime = 0;
-        }
-        
+        //Update the jump motion if the player is jumpin'
+        if (this.jumping)
+            this.jump(deltaTime);
+
         //Check the "pulsating" effect limits
         if (this.scale > 1.25f || this.scale < 0.75f){
             this.scaleFactor *= -1.0f;
         }
-        
+        //Update scale by the pulsation
         this.scale += scaleFactor;
         
         //update the pulsation
         this.sprite.setScale(this.scale);
     }
+    
+    //Method for jump movement. Updates the player
+    private void jump(float deltaTime){
+        //Update the jump velocity with gravity
+        this.jumpVelocity = this.jumpVelocity - Constants.GRAVITY;
+
+        //Update the y coordinate with the current jump velocity
+        this.position.y += (this.jumpVelocity * deltaTime); 
+        this.sprite.setY(this.position.y);
+        Gdx.app.debug(TAG, "Doing jump!!");
+        
+        //Check if the player is still above ground
+        if (this.position.y <= Constants.GROUND_LEVEL){
+            //Ground the player and set jumping to false
+            this.position.y = Constants.GROUND_LEVEL;
+            this.jumping = false;
+            
+            //Also reset the jump velocity to the starting value; otherwise
+            //the player can jump only once...
+            this.jumpVelocity = Constants.PLAYER_JMP_VELOCITY;
+        }
+    }    
     
     //Render the sprite
     public void render(SpriteBatch batch){

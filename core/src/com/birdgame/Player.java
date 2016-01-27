@@ -65,7 +65,7 @@ public class Player {
         //Player starts grounded
         this.jumping = false;
         
-        Gdx.app.debug(TAG, "Created player!");
+        Gdx.app.debug(TAG, "Created player at: " + position.x + ", " + position.y);
     }
     
     //Create a ball-shaped texture
@@ -142,7 +142,6 @@ public class Player {
         //Update the y coordinate with the current jump velocity
         this.position.y += (this.jumpVelocity * deltaTime); 
         this.sprite.setY(this.position.y);
-        Gdx.app.debug(TAG, "Doing jump!!");
         
         //Check if the player is still above ground
         if (this.position.y <= Constants.GROUND_LEVEL){
